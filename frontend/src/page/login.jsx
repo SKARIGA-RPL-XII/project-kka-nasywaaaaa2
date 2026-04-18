@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 import { User, Lock, Loader2, ArrowRight, Building2 } from "lucide-react";
 
 export default function Login() {
@@ -11,44 +11,46 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // VALIDASI
-    if (!username || !password) {
-      alert("Username dan password wajib diisi");
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        {
-          username,
-          password,
-        }
-      );
+      const res = await api.post("auth/login",{
+        username,
+        password,
+      });
 
-      const { token, role, user } = res.data;
+      // Ambil data dengan aman
+      const token = res?.data?.token;
+      const role = res?.data?.role;
 
-      // SIMPAN KE LOCAL STORAGE
-      localStorage.setItem("token", token);
-      localStorage.setItem("role", role);
-      localStorage.setItem("user", JSON.stringify(user));
-
-      // REDIRECT BERDASARKAN ROLE
-      if (role === "admin") {
-        navigate("/admin/dashboard", { replace: true });
-      } else {
-        navigate("/user/dashboard", { replace: true });
+      if (!token || !role) {
+        alert("Login gagal: token atau role tidak ditemukan");
+        return;
       }
 
-    } catch (error) {
-      console.error("Login Error:", error);
+      // Paksa role jadi lowercase
+      const roleLower = role.toLowerCase();
 
+      // Simpan ke localStorage
+      localStorage.setItem("token", token);
+      localStorage.setItem("role", roleLower);
+
+      // Redirect sesuai role
+      if (roleLower === "admin") {
+        navigate("/admin/dashboard", { replace: true });
+      } else if (roleLower === "user") {
+        navigate("/user/dashboard", { replace: true });
+      } else {
+        alert("Role tidak valid");
+        localStorage.clear();
+        navigate("/", { replace: true });
+      }
+
+    } catch (err) {
+      console.error("Login error:", err);
       alert(
-        error.response?.data?.message ||
-        "Login gagal, cek username dan password"
+        err.response?.data?.message ||
+        "Username atau password salah / server error"
       );
     } finally {
       setIsLoading(false);
@@ -59,7 +61,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] p-4">
       <div className="w-full max-w-[440px]">
         <div className="bg-white rounded-3xl shadow-lg p-8">
-
+          
           {/* Header */}
           <div className="flex flex-col items-center mb-8 text-center">
             <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-4">
@@ -75,17 +77,20 @@ export default function Login() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-
+            
             {/* Username */}
             <div>
               <label className="text-sm font-semibold text-slate-700">
                 Username
               </label>
               <div className="relative mt-1">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <User
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                />
                 <input
                   type="text"
-                  autoComplete="username"
+                  required
                   className="w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500"
                   placeholder="Masukkan username"
                   value={username}
@@ -100,10 +105,13 @@ export default function Login() {
                 Password
               </label>
               <div className="relative mt-1">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <Lock
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                />
                 <input
                   type="password"
-                  autoComplete="current-password"
+                  required
                   className="w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500"
                   placeholder="Masukkan password"
                   value={password}
@@ -136,4 +144,4 @@ export default function Login() {
       </div>
     </div>
   );
-} 
+}

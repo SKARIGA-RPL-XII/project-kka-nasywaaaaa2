@@ -1,4 +1,4 @@
-import db from "../config/database.js";
+import db from "../config/db.js";
 
 /*
 ==============================
@@ -75,21 +75,10 @@ export const createPermohonan = async (req, res) => {
     const userId = req.user.id;
 
     const {
-      nama,
       sarana,
       tanggal,
-      waktu,
       deskripsi
     } = req.body;
-
-    console.log("Data diterima:", {
-      userId,
-      nama,
-      sarana,
-      tanggal,
-      waktu,
-      deskripsi
-    });
 
     await db.query(
       `INSERT INTO permohonan
@@ -97,8 +86,8 @@ export const createPermohonan = async (req, res) => {
       VALUES (?, ?, ?, ?, ?, 'menunggu')`,
       [
         userId,
-        sarana,          // mapping dari sarana → jenis_layanan
-        sarana,          // mapping dari sarana → nama_fasilitas
+        sarana,   // jenis_layanan
+        sarana,   // nama_fasilitas
         tanggal,
         deskripsi || null
       ]
